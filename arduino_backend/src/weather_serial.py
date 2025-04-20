@@ -6,7 +6,7 @@ from ultralytics import YOLO
 import cv2
 
 orange_model = YOLO('C:/Users/doodl/OneDrive/Documents/PlatformIO/Projects/arduino_backend/runs/detect/train/weights/best.pt')
-leaf_model = YOLO('C:/Users/doodl/OneDrive/Documents/PlatformIO/Projects/arduino_backend/runs/detect/train4/weights/best.pt')
+leaf_model = YOLO("C:/Users/doodl/OneDrive/Documents/PlatformIO/Projects/arduino_backend/runs/detect/train8/weights/best.pt")
 
 cap = cv2.VideoCapture(0)  # 0 is usually the default webcam
 
@@ -119,6 +119,7 @@ def run_serial_communication():
             leaf_results =leaf_model(frame)
             
             orange_detected = False  # <-- Track orange per frame
+            leaf_detected = False  # <-- Track orange per frame
 
             for result in orange_results:
                 boxes = result.boxes  # Boxes object for bbox outputs
@@ -133,38 +134,39 @@ def run_serial_communication():
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         label = f'Orange {confidence:.2f}'
                         cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                        ser.write(("1\n").encode()) #it is an oran
                         orange_detected = True
+                        break # Exit loop
 
-                    else:
-                        ser.write(("0\n").encode())
-            
-            if not orange_detected:
+            if orange_detected:
+                ser.write(("1\n").encode())
+            else:
                 ser.write(("0\n").encode())
 
-            # for result in leaf_results:
-            #     boxes = result.boxes  # Boxes object for bbox outputs
-            #     for box in boxes:
-            #         x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-            #         confidence = box.conf[0].item()
-            #         class_id = box.cls[0].item()
+            for result in leaf_results:
+                boxes = result.boxes  # Boxes object for bbox outputs
+                for box in boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    confidence = box.conf[0].item()
+                    class_id = box.cls[0].item()
 
-            #         # Check if the detected object is an leaf (adjust class ID if needed)
-            #         if class_id == 0 and confidence > 0.7:  # Assuming 'leaf' class ID is 0
-            #             # Draw bounding box and label on the frame
-            #             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            #             label = f'leaf {confidence:.2f}'
-            #             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-            #             ser.write(("2\n").encode()) #it is a leaf
-            #         else:
-            #             ser.write(("0\n").encode())
+                    if class_id == 0 and confidence > 0.8:  # Assuming 'leaf' class ID is 0
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        label = f'leaf {confidence:.2f}'
+                        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                        leaf_detected = True
+                        break
 
-            # Display the resulting frame
+            if leaf_detected:
+                ser.write(("2\n").encode())
+            else:
+                ser.write(("0\n").encode())
+
             cv2.imshow('Webcam', frame)
 
             # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                break        
+                break
+   
 
 
 if __name__ == "__main__":

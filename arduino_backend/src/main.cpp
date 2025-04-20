@@ -58,6 +58,7 @@ String temperatureArray[11];
 String aqiArray[11];
 
 bool orangeDetected=false;
+bool leafDetected=false;
 
 boolean doneLoading=false;
 
@@ -110,8 +111,16 @@ void scroll(){
       digitalWrite(8,HIGH);
 
     }
-    else if(crop==spinach &&goodSpinachTemp && !airBad){
+    else if(crop==spinach &&goodSpinachTemp && !airBad  && leafDetected){
       lcd.print("great spinach");
+
+      if(waterPoured){
+        wateringCan.write(0);
+        delay(250);
+        wateringCan.write(100);
+        waterPoured=false;
+      }
+      digitalWrite(8,LOW);
     }
     else if(crop==orange &&goodOrangeTemp && !airBad && orangeDetected){
       lcd.print("great orange");
@@ -185,8 +194,10 @@ void loop() {
             crop = spinach;
             digitalWrite(10, HIGH);
             digitalWrite(9, LOW);
+            leafDetected=true;
           } else if (val == 0) {
             orangeDetected=false;
+            leafDetected=false;
             digitalWrite(10, LOW);
             digitalWrite(9, LOW);
           }
